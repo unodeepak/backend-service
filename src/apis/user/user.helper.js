@@ -18,3 +18,4 @@ exports.generateToken = (payload) => {
     throw new Error("Failed to generate token");
   }
 };
+

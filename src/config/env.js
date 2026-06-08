@@ -7,4 +7,6 @@ module.exports = {
   
   ACCESS_TOKEN_EXP: process.env.ACCESS_TOKEN_EXPIRES_IN,
   REFRESH_TOKEN_EXP: process.env.REFRESH_TOKEN_EXPIRES_IN,
+
+  REDIS_URL: process.env.REDIS_URL,
 };

@@ -1,7 +1,9 @@
 const { return200, return400, return500 } = require("../../constant/return");
 const Model = require("../../models");
+const sendEvent = require("../../utils/sendEvent");
 const { generateToken } = require("./user.helper");
 const bcrypt = require("bcrypt");
+const redisHelper = require("../../utils/redis.helper");
 
 exports.createUser = async (req) => {
   try {
@@ -21,6 +23,11 @@ exports.createUser = async (req) => {
     const data = await Model.User.create(req.body);
 
     const token = generateToken(data);
+    sendEvent({
+      eventName: "join-room",
+      msg: "User Created Successfully",
+      id: data._id,
+    });
     return return200("User Created Successfully", {
       data: {
         user: data,
@@ -45,7 +52,10 @@ exports.loginUser = async (req) => {
       return return400(`User with email ${req.body.email} does not exist`);
     }
 
-    const isPasswordValid = await bcrypt.compare(req.body.password, user.password);
+    const isPasswordValid = await bcrypt.compare(
+      req.body.password,
+      user.password,
+    );
     if (!isPasswordValid) {
       return return400("Invalid password");
     }
@@ -82,7 +92,17 @@ exports.getUserById = async (req) => {
 
 exports.getAllUsers = async (req) => {
   try {
+    const key = `FETCH_DATA_${req.user._id}`;
+    const redisData = await redisHelper.getCache(key);
+    if (redisData) {
+      return return200("Users Fetched Successfully", {
+        data: {
+          users: redisData,
+        },
+      });
+    }
     const users = await Model.User.find();
+    redisHelper.setCache(key, users, 60 * 60); // 1 hour()
     return return200("Users Fetched Successfully", {
       data: {
         users,
